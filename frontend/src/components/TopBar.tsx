@@ -15,7 +15,7 @@ interface TopBarProps {
   onStopAll: () => void;
 }
 
-const LAYOUTS: GridLayout[] = [1, 2, 4, 6, 8];
+const LAYOUTS: GridLayout[] = [1, 2, 4, 5, 10];
 
 export function TopBar({
   layout, sessionCount, backendOnline, wsConnected,
