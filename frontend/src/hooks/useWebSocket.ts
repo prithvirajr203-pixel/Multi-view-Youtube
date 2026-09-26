@@ -11,8 +11,6 @@ export function useWebSocket(onMessage: MessageHandler) {
   onMessageRef.current = onMessage;
 
   const connect = useCallback(() => {
-    // Backend is not configured.
-    // Keep the frontend running without attempting an invalid WebSocket.
     if (!WS_URL) {
       return;
     }
@@ -25,10 +23,11 @@ export function useWebSocket(onMessage: MessageHandler) {
     }
 
     const ws = new WebSocket(WS_URL);
+
     wsRef.current = ws;
 
     ws.onopen = () => {
-      // Connection established.
+      console.log('WebSocket connected');
     };
 
     ws.onmessage = (event) => {
@@ -43,7 +42,6 @@ export function useWebSocket(onMessage: MessageHandler) {
     ws.onclose = () => {
       wsRef.current = null;
 
-      // Only reconnect if a backend URL is configured.
       if (WS_URL) {
         reconnectTimer.current = setTimeout(connect, 2000);
       }
