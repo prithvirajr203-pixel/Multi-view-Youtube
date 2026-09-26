@@ -1,56 +1,260 @@
 // API service layer — all backend calls go through here
 import type { BrowserSession } from '../types';
 
-const API_BASE = `http://${window.location.hostname}:8000`;
-export const WS_URL = `ws://${window.location.hostname}:8000/ws`;
+/*
+ * Local:
+ *   VITE_API_URL=http://localhost:8000
+ *
+ * Production:
+ *   VITE_API_URL=https://your-backend-domain.com
+ *
+ * If VITE_API_URL is not configured, the frontend can still load,
+ * but backend-dependent features will not work.
+ */
+
+const configuredApiUrl = import.meta.env.VITE_API_URL?.trim();
+
+export const API_BASE = configuredApiUrl
+  ? configuredApiUrl.replace(/\/+$/, '')
+  : '';
+
+export const WS_URL = API_BASE
+  ? API_BASE.replace(/^http:/, 'ws:').replace(/^https:/, 'wss:') + '/ws'
+  : '';
 
 export const api = {
-  health: () =>
-    fetch(`${API_BASE}/health`).then(r => r.json()),
+  health: async () => {
+    if (!API_BASE) {
+      throw new Error('Backend URL is not configured.');
+    }
+
+    const response = await fetch(`${API_BASE}/health`);
+
+    if (!response.ok) {
+      throw new Error(`Health check failed (${response.status})`);
+    }
+
+    return response.json();
+  },
 
   browsers: {
-    list: (): Promise<BrowserSession[]> =>
-      fetch(`${API_BASE}/api/browsers`).then(r => r.json()),
+    list: async (): Promise<BrowserSession[]> => {
+      if (!API_BASE) {
+        throw new Error('Backend URL is not configured.');
+      }
 
-    create: (): Promise<BrowserSession> =>
-      fetch(`${API_BASE}/api/browsers`, { method: 'POST' }).then(r => {
-        if (!r.ok) throw new Error(`Failed to create browser (${r.status})`);
-        return r.json();
-      }),
+      const response = await fetch(`${API_BASE}/api/browsers`);
 
-    close: (id: string) =>
-      fetch(`${API_BASE}/api/browsers/${id}`, { method: 'DELETE' }).then(r => r.json()),
+      if (!response.ok) {
+        throw new Error(`Failed to load browsers (${response.status})`);
+      }
 
-    navigate: (id: string, url: string): Promise<BrowserSession> =>
-      fetch(`${API_BASE}/api/browsers/${id}/navigate`, {
+      return response.json();
+    },
+
+    create: async (): Promise<BrowserSession> => {
+      if (!API_BASE) {
+        throw new Error('Backend URL is not configured.');
+      }
+
+      const response = await fetch(`${API_BASE}/api/browsers`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: url.startsWith('http') ? url : `https://${url}` }),
-      }).then(r => r.json()),
+      });
 
-    reload: (id: string) =>
-      fetch(`${API_BASE}/api/browsers/${id}/reload`, { method: 'POST' }).then(r => r.json()),
+      if (!response.ok) {
+        throw new Error(`Failed to create browser (${response.status})`);
+      }
 
-    back: (id: string) =>
-      fetch(`${API_BASE}/api/browsers/${id}/back`, { method: 'POST' }).then(r => r.json()),
+      return response.json();
+    },
 
-    forward: (id: string) =>
-      fetch(`${API_BASE}/api/browsers/${id}/forward`, { method: 'POST' }).then(r => r.json()),
+    close: async (id: string) => {
+      if (!API_BASE) {
+        throw new Error('Backend URL is not configured.');
+      }
 
-    stop: (id: string) =>
-      fetch(`${API_BASE}/api/browsers/${id}/stop`, { method: 'POST' }).then(r => r.json()),
+      const response = await fetch(`${API_BASE}/api/browsers/${id}`, {
+        method: 'DELETE',
+      });
 
-    navigateAll: (url: string) =>
-      fetch(`${API_BASE}/api/browsers/batch/navigate-all`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: url.startsWith('http') ? url : `https://${url}` }),
-      }).then(r => r.json()),
+      if (!response.ok) {
+        throw new Error(`Failed to close browser (${response.status})`);
+      }
 
-    reloadAll: () =>
-      fetch(`${API_BASE}/api/browsers/batch/reload-all`, { method: 'POST' }).then(r => r.json()),
+      return response.json();
+    },
 
-    stopAll: () =>
-      fetch(`${API_BASE}/api/browsers/batch/stop-all`, { method: 'POST' }).then(r => r.json()),
+    navigate: async (
+      id: string,
+      url: string,
+    ): Promise<BrowserSession> => {
+      if (!API_BASE) {
+        throw new Error('Backend URL is not configured.');
+      }
+
+      const response = await fetch(
+        `${API_BASE}/api/browsers/${id}/navigate`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            url: url.startsWith('http') ? url : `https://${url}`,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to navigate browser (${response.status})`);
+      }
+
+      return response.json();
+    },
+
+    reload: async (id: string) => {
+      if (!API_BASE) {
+        throw new Error('Backend URL is not configured.');
+      }
+
+      const response = await fetch(
+        `${API_BASE}/api/browsers/${id}/reload`,
+        {
+          method: 'POST',
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to reload browser (${response.status})`);
+      }
+
+      return response.json();
+    },
+
+    back: async (id: string) => {
+      if (!API_BASE) {
+        throw new Error('Backend URL is not configured.');
+      }
+
+      const response = await fetch(
+        `${API_BASE}/api/browsers/${id}/back`,
+        {
+          method: 'POST',
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to go back (${response.status})`);
+      }
+
+      return response.json();
+    },
+
+    forward: async (id: string) => {
+      if (!API_BASE) {
+        throw new Error('Backend URL is not configured.');
+      }
+
+      const response = await fetch(
+        `${API_BASE}/api/browsers/${id}/forward`,
+        {
+          method: 'POST',
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to go forward (${response.status})`);
+      }
+
+      return response.json();
+    },
+
+    stop: async (id: string) => {
+      if (!API_BASE) {
+        throw new Error('Backend URL is not configured.');
+      }
+
+      const response = await fetch(
+        `${API_BASE}/api/browsers/${id}/stop`,
+        {
+          method: 'POST',
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to stop browser (${response.status})`);
+      }
+
+      return response.json();
+    },
+
+    navigateAll: async (url: string) => {
+      if (!API_BASE) {
+        throw new Error('Backend URL is not configured.');
+      }
+
+      const response = await fetch(
+        `${API_BASE}/api/browsers/batch/navigate-all`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            url: url.startsWith('http') ? url : `https://${url}`,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          `Failed to navigate all browsers (${response.status})`,
+        );
+      }
+
+      return response.json();
+    },
+
+    reloadAll: async () => {
+      if (!API_BASE) {
+        throw new Error('Backend URL is not configured.');
+      }
+
+      const response = await fetch(
+        `${API_BASE}/api/browsers/batch/reload-all`,
+        {
+          method: 'POST',
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          `Failed to reload all browsers (${response.status})`,
+        );
+      }
+
+      return response.json();
+    },
+
+    stopAll: async () => {
+      if (!API_BASE) {
+        throw new Error('Backend URL is not configured.');
+      }
+
+      const response = await fetch(
+        `${API_BASE}/api/browsers/batch/stop-all`,
+        {
+          method: 'POST',
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          `Failed to stop all browsers (${response.status})`,
+        );
+      }
+
+      return response.json();
+    },
   },
 };
