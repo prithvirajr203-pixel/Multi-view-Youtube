@@ -15,6 +15,7 @@ interface TopBarProps {
   onStopAll: () => void;
 }
 
+// Supported GridLayout values: 1, 2, 4, 5, 10, 20, 30, 50
 const LAYOUTS: GridLayout[] = [1, 2, 4, 5, 10];
 
 export function TopBar({
